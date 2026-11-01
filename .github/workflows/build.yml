@@ -1,0 +1,58 @@
+
+name: Build Petra Ride Pilot APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android packages
+        run: |
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
+
+      - name: Install Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Extract project
+        run: |
+          unzip -o PetraRidePilot-Android-Starter-Java17.zip -d extracted
+
+      - name: Generate Gradle Wrapper
+        run: |
+          cd extracted/PetraRidePilot
+          gradle wrapper --gradle-version 8.9
+          chmod +x gradlew
+
+      - name: Build APK
+        run: |
+          cd extracted/PetraRidePilot
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: PetraRidePilot-debug-apk
+          path: extracted/PetraRidePilot/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
